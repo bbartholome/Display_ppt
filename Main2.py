@@ -11,7 +11,7 @@ from win32com.client import Dispatch   # pywin32 package
 import configparser
 from os import walk
 import threading as th
-import keyboard                         #keyboard package
+import keyboard  #keyboard package
 
 keep_going = True
 
@@ -32,7 +32,7 @@ def Read_ppt(path, delay):
     for (dirpath, dirnames, filenames) in walk(path):
         f.extend(filenames)
         break
-    print(f)
+    print('file list:', f)
 
     ppt = Dispatch('Powerpoint.Application')
     ppt.Visible = True  # optional: if you want to see the spreadsheet
@@ -42,10 +42,10 @@ def Read_ppt(path, delay):
     for i in f:  # open and show the ppt
         if keep_going:
             filename = path + i
-            print(filename)
             if filename.find(".ppt") != -1 or filename.find(".pps") != -1:
                 pptfile = ppt.Presentations.Open(filename, 1)  #open presentation (readOnly)
-                print(ppt.ActivePresentation.Slides.Count)
+                print('filename:' , filename)
+                print('slide count:', ppt.ActivePresentation.Slides.Count)
 
                 j = 0
                 while (j < ppt.ActivePresentation.Slides.Count) and keep_going:
@@ -53,18 +53,20 @@ def Read_ppt(path, delay):
                         ppt.ActivePresentation.SlideShowSettings.Run()  # needed if PPTX and ppt file not needed if PPSX and pps file
 
                     j += 1
-                    print(ppt.ActivePresentation.Slides(j).Shapes.Count)
-                    forme = ppt.ActivePresentation.Slides(j).Shapes(1).Type  # value 16 meams Media  #https://docs.microsoft.com/en-us/office/vba/api/office.msoshapetype
-                    print(forme)
+                    print('shape count', ppt.ActivePresentation.Slides(j).Shapes.Count)
+                   # forme = ppt.ActivePresentation.Slides(j).Shapes(1).Type  # value 16 meams Media  #https://docs.microsoft.com/en-us/office/vba/api/office.msoshapetype
+                   # print('forme:' , forme)
 
                     SleepTime = 0
                     k = 0
                     while k < ppt.ActivePresentation.Slides(j).Shapes.Count:
                         k += 1
+                        print('forme :', k)
+                        print('forme type :', ppt.ActivePresentation.Slides(j).Shapes(k).Type)
                         if ppt.ActivePresentation.Slides(j).Shapes(k).Type==16:  # value 16 meams Media  #https://docs.microsoft.com/en-us/office/vba/api/office.msoshapetypeforme
                             VideoLength = ppt.ActivePresentation.Slides(j).Shapes(k).MediaFormat.Length  # duration of the video in ms
                             #print(VideoLength)
-                            print(VideoLength / 1000)
+                            print('video length' , VideoLength / 1000)
                             SleepTime += VideoLength/1000
 
                     time.sleep(max(SleepTime,delay))

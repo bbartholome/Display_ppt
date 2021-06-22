@@ -2,12 +2,13 @@
 # importing time and vlc
 import time, vlc
 import win32gui, win32con
-# method to play video
-def video(source):
-    # creating a vlc instance
-    vlc_instance = vlc.Instance()
 
-    media = vlc_instance.media_new("death_note.mkv")
+
+
+def video(source):
+    # https://www.olivieraubert.net/vlc/python-ctypes/doc/vlc.Instance-class.html
+    # creating a vlc instance
+    vlc_instance = vlc.Instance("video")
 
     # creating a media player
     player = vlc_instance.media_player_new()
@@ -21,6 +22,8 @@ def video(source):
     # play the video
 
     player.play()
+    # media_
+    player.toggle_fullscreen()
     time.sleep(0.2)
     player.pause()
 
@@ -33,17 +36,25 @@ def video(source):
         win32gui.SetForegroundWindow(handle)
         win32gui.ShowWindow(handle, win32con.SW_MAXIMIZE)
     except:
-        print ('windows not found')
+        print('windows not found')
 
-    #getting the duration of the video
+    # getting the duration of the video
     duration = player.get_length()
 
     # printing the duration of the video
     # print("Duration : " + str(duration))
 
     # wait video time time
-    time.sleep(duration/1000)
+    time.sleep(duration / 1000)
+
+    #os.system("TASKKILL /F /IM vlc.exe")
+    vlc_instance.vlm_del_media(source)
 
 
 # call the video method
-video(r'\pps\videoplayback.mp4')
+
+i=0
+while i<5:
+    i=+1
+    print(i)
+    video(r'\pps\videoplayback.mp4')

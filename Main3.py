@@ -6,7 +6,7 @@
 # https://python-pptx.readthedocs.io/en/latest/api/presentation.html
 # https://docs.microsoft.com/en-us/office/vba/api/powerpoint.slideshowview.next
 
-import time
+import time,shutil,os
 from win32com.client import Dispatch   # pywin32 package
 import configparser
 from os import walk
@@ -16,6 +16,50 @@ import vlc
 import win32gui, win32con
 
 keep_going = True
+
+#*******************************************
+def Clone_File(source, target):
+    original = []  # get the list of file in directory 'path'
+    for (dirpath, dirnames, original_filenames) in walk(source):
+        original.extend(original_filenames)
+        break
+    print('file list:', original)
+
+    copy = []  # get the list of file in directory 'path'
+    for (dirpath, dirnames, copy_filenames) in walk(target):
+        copy.extend(copy_filenames)
+        break
+    print('file list:', copy)
+
+    for name in original:   #if file not presnt in destination folder copy it
+        present=False
+        for dest_name in copy:
+            if name == dest_name:
+                present=True
+        if not present:
+            try:
+                shutil.copyfile(source + name, target + name)
+                print("file copied", source + name, " to ", target + name )
+            except:
+                print('failed to copy')
+        else:
+            print("file already present", source + name )
+
+    for dest_name in copy: #if file not present in source directory erase it in destination directory
+        present = False
+        for name in original:
+            if name == dest_name:
+                present = True
+        if not present:
+            try:
+                os.remove(target + dest_name)
+                print("file deleted from", target + dest_name)
+            except FileNotFoundError :
+                print('file not found, failed to delete',target + dest_name)
+
+
+        else:
+            print("file present", source + name)
 
 
 #***********************************************
@@ -61,20 +105,21 @@ def loop_file(path, delay):
 
             type = Check_file_type(name)
             if type == "ppt":
-                Read_ppt(path, name, delay)
+                Read_ppt(PPT,path, name, delay)
             elif type == "video":
-                video(path+name)
+                video(path+name,VLC_instance,Player)
 
 
 #***********************************************
-def video(source):
+def video(source, vlc_instance, player):
     #https://www.olivieraubert.net/vlc/python-ctypes/doc/vlc.Instance-class.html
-    # creating a vlc instance
-    # creating a vlc instance
-    vlc_instance = vlc.Instance("video")
 
-    # creating a media player
-    player = vlc_instance.media_player_new()
+
+    if vlc_instance==None:
+        vlc_instance = vlc.Instance('video')   # creating a vlc instance
+
+    if player==None:
+        player = vlc_instance.media_player_new() # creating a media player
 
     # creating a media
     media = vlc_instance.media_new(source)
@@ -110,17 +155,18 @@ def video(source):
     # wait video time time
     time.sleep(duration / 1000)
 
-    vlc_instance.vlm_del_media("video")
+    vlc_instance.vlm_del_media('video')
 
 
 #***********************************************
-def Read_ppt(path,filename, delay):
+def Read_ppt(ppt,path,filename, delay):
     # Use a breakpoint in the code line below to debug your script.
     print(path+filename)
 
-    ppt = Dispatch('Powerpoint.Application')
-    ppt.Visible = True  # optional: if you want to see the spreadsheet
-    ppt.Activate
+    if ppt==None:
+        ppt = Dispatch('Powerpoint.Application')
+        ppt.Visible = True  # optional: if you want to see the spreadsheet
+        ppt.Activate
 
     print('filename:', filename)
 
@@ -173,16 +219,35 @@ def Read_ppt(path,filename, delay):
 #********************************************
 
 if __name__ == '__main__':
+
+    # creating a vlc instance
+    VLC_instance = vlc.Instance('video')
+
+    # creating a media player
+    Player = VLC_instance.media_player_new()
+
+    PPT = Dispatch('Powerpoint.Application')
+    PPT.Visible = True  # optional: if you want to see the spreadsheet
+    PPT.Activate
+
     config = configparser.ConfigParser()
-    config.read('PowerPoint.ini')  # read config file
+    try:
+        config.read('PowerPoint.ini')  # read config file
+    except:
+        print("cannot open ini file")
 
     path = config.get('Path', 'Path')  # get the path for the ppt file
+    Drop_Path= config.get('Path', 'Drop_File_Path')  # get the path for the ppt file
     delay = config.getint('Delay', 'Delay')  # get the stop time between 2 slides
 
     th.Thread(target=key_capture_thread, args=(), name='key_capture_thread', daemon=True).start()
     while keep_going:
         print('still going...')
+        print('check directory')
+        Clone_File(Drop_Path,path)
+        print('looping..')
         loop_file(path, delay)
+
 
     print('Fin de programme')
 
